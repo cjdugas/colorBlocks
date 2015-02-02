@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<html>
+<!-- disable right-click menu popping up when shading-->
+<body oncontextmenu="return false;">
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+<script>
+
+    //initialize svg + block data 
+    var width = 1300;
+        height = 800;
+        xcoord = 0;
+        blockwidth = 40;
+        blockheight = 40;
+        blockSet = makeBlockArray();
+        svg  = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+
+    //initialize all the blocks based on the data, assign functions to mousing over, dragging and mouse release
+    svg.selectAll("rect")
+            .data(blockSet).enter() //the enter is a fun d3 thing that is assigning a rectangle to each data point
+            .append("rect")
+            .attr("x", function(d) { return d.x; })// added some padding, update x coord
+            .attr("y", function(d) {return d.y + 10;}) //+ 10 for padding?
+            .attr("height", blockheight)
+            .attr("width", blockwidth)
+            .attr("fill", function(d) {return d.color; })
+            .attr("stroke-width", 2) //added 2/1
+            .attr("stroke", "#FFFFFF")
+            .on("mousedown", mousedown)
+            .on("mousemove", mousemove)
+            .on("mouseup", mouseup);
+
+    //return a random hex color in format #FFFFFF
+    function getRandomColor() {
+        var letters = '0123456789ABCDEF'.split('');
+        var color = '#';
+        for (var i = 0; i < 6; i++ ) {
+            color += letters[Math.round(Math.random() * 15)];
+        }
+        return color;
+    }
+
+    //initialize mousing variables 
+    //mousing determines if mouse if in middle of dragging
+    var mousing = 0; 
+    //mousetype determines which button was pressed
+    var mousetype = -1;
+
+    //returns 0 if LMB, 2 if RMB
+    function mousedown(d) {
+        mousing = +1;
+        mousetype = d3.event.button;
+    }
+
+    //based on mousing vars, make the given rect darker or lighter
+    function mousemove(d) {
+        if(mousing) {
+            //LMB makes it darker, default val is 1, but can be [0,1]
+            if(mousetype == 0){
+                d3.select(this).attr("fill", d3.hsl(d.color).darker());
+            }
+            //RMB makes it brighter, default val is 1, but can be [0,1]
+            if(mousetype == 2){
+                d3.select(this).attr("fill", d3.hsl(d.color).brighter(.5));
+            } 
+        }
+    }
+
+    //reset vars when mouse button released
+    function mouseup(){
+        mousing = 0;
+        mousetype = -1;
+    }
+
+    //given two hex numbers in format "#AA", find average between them
+    function hexAvg(hex1, hex2){
+        //should convert both to decimal, avg them and return corresponding hex value
+        var dec = parseInt(hex1, 16) + parseInt(hex2, 16);
+        dec = dec/2; 
+         
+        var ret = Math.floor(dec).toString(16);
+        return ret; 
+    }
+
+    //given two colors in format "#AABB00", average red, green and blue vals amongst themselves, return color between the two
+    function interpColor(color1, color2){
+        var r = hexAvg(color1.substring(1,3), color2.substring(1,3));
+        var g = hexAvg(color1.substring(3,5), color2.substring(3,5));
+        var b = hexAvg(color1.substring(5,7), color2.substring(5,7));
+        var ret = "#" + r+g+ b;
+        return ret;
+
+    }
+
+    //initialize the data for the blocks
+    function makeBlockArray(){
+        if (width <= 0 || height <= 0) {throw "width and height must be positive"};
+
+        blocksX = 16;
+        blocksY = 16;
+        blockSet = []; 
+
+        //for every other row, and every other column assign a random color
+        for(var i = 0; i < (blocksY/2); i++) { //want i to be row
+                for(var j = 0; j < (blocksX/2); j++){ //j should be col
+
+                    //the 4 is for the white border around the blocks
+                    blockSet.push({x: 2*i*(blockwidth + 4), y: 2*j*(blockheight + 4), color: getRandomColor()}); 
+  
+            }
+        }
+
+        //on those same rows, shade between the given blocks
+        for(var k = 0; k < (blocksY/2); k++) { // k is row
+                for(var l = 0; l < (blocksX/2); l++){ //l is col
+                    blockSet.push({x: (2*k+1)*(blockwidth + 4), y: 2*l*(blockheight + 4), color: interpColor(blockSet[blocksY/2*k + l].color, blockSet[blocksY/2*k + l + 1].color)}); 
+                    // console.log("blockSet[%d] is interp'd from %d, %d", blockSet.length -1, blocksY/2*k +l, blocksY/2*k + l + 1);
+            }
+        }
+
+        //now, for each unshaded block, assign it the color between the block above and below it
+        for(var p = 0; p<(blocksY/2*(blocksX)); p++){
+            //pick the empty rows
+            var row = 2*Math.floor(p/blocksX ) + 1;
+            blockSet.push({x: (p%blocksX)*(blockwidth + 4), y: row*(blockheight + 4), color: interpColor(blockSet[p].color, blockSet[p+3].color)});
+      
+        }
+
+        return blockSet;
+    }
+
+   
+
+
+</script>
+
+
+
+</body>
+</html>

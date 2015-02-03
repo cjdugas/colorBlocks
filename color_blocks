@@ -4,37 +4,55 @@
 <html>
 <!-- disable right-click menu popping up when shading-->
 <body oncontextmenu="return false;">
+
+<button id="refresh" onclick="initializeBlocks()"> Refresh pattern </button> 
+
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="http://d3js.org/topojson.v1.min.js"></script>
-
 <script>
 
     //initialize svg + block data 
+    //initialize mousing variables 
     var width = 1300;
         height = 800;
         xcoord = 0;
         blockwidth = 40;
         blockheight = 40;
-        blockSet = makeBlockArray();
-        svg  = d3.select("body").append("svg")
-            .attr("width", width)
-            .attr("height", height);
+        mousing = 0; 
+        mousetype = -1;
+        svg  = d3.select("body").append("svg");
 
+    /*
+     * if svg already has blocks, clear it
+     * initialize block set
+     * append to svg
+     */
+    function initializeBlocks() {
+        //clear the svg
+        svg.selectAll("*").remove();
+        var blockSet = makeBlockArray();
 
-    //initialize all the blocks based on the data, assign functions to mousing over, dragging and mouse release
-    svg.selectAll("rect")
-            .data(blockSet).enter() //the enter is a fun d3 thing that is assigning a rectangle to each data point
-            .append("rect")
-            .attr("x", function(d) { return d.x; })// added some padding, update x coord
-            .attr("y", function(d) {return d.y + 10;}) //+ 10 for padding?
-            .attr("height", blockheight)
-            .attr("width", blockwidth)
-            .attr("fill", function(d) {return d.color; })
-            .attr("stroke-width", 2) //added 2/1
-            .attr("stroke", "#FFFFFF")
-            .on("mousedown", mousedown)
-            .on("mousemove", mousemove)
-            .on("mouseup", mouseup);
+        svg.attr("width", width)
+           .attr("height", height);
+
+        //initialize all the blocks based on the data, assign functions to mousing over, dragging and mouse release
+        svg.selectAll("rect")
+                .data(blockSet).enter() //the enter is a fun d3 thing that is assigning a rectangle to each data point
+                .append("rect")
+                .attr("x", function(d) { return d.x; })// added some padding, update x coord
+                .attr("y", function(d) {return d.y + 10;}) //+ 10 for padding?
+                .attr("height", blockheight)
+                .attr("width", blockwidth)
+                .attr("fill", function(d) {return d.color; })
+                .attr("stroke-width", 2) //added 2/1
+                .attr("stroke", "#FFFFFF")
+                .on("mousedown", mousedown)
+                .on("mousemove", mousemove)
+                .on("mouseup", mouseup);
+    }
+
+    //actually intialize blocks
+    initializeBlocks();
 
     //return a random hex color in format #FFFFFF
     function getRandomColor() {
@@ -46,11 +64,6 @@
         return color;
     }
 
-    //initialize mousing variables 
-    //mousing determines if mouse if in middle of dragging
-    var mousing = 0; 
-    //mousetype determines which button was pressed
-    var mousetype = -1;
 
     //returns 0 if LMB, 2 if RMB
     function mousedown(d) {
